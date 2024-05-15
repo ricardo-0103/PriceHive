@@ -16,6 +16,8 @@ app.post("/product", async (req, res) => {
   const productName = req.body.product;
   //const productsMercadoLibre = await searchProductMercadoLibre(productName);
   const productsAlkosto = await searchProductAlkosto(productName);
+  //const productsOlimpica = await searchProductOlimpica(productName);
+  //const productsExito = await searchProductExito(productName);
   res.render("index.ejs", { products: productsAlkosto });
 });
 
@@ -254,4 +256,129 @@ const searchProductAlkosto = async (product) => {
   }
 
   return products;
+};
+const searchProductOlimpica = async (product) => {
+  console.log("inicio");
+  const browser = await chromium.launch();
+  const page = await browser.newPage();
+  await page.goto("https://www.olimpica.com/");
+  await page.waitForLoadState("domcontentloaded");
+
+  // Write the product in the search bar
+  await page.click("#downshift-0-input");
+  await page.$eval(
+    "#downshift-0-input",
+    (element, product) => {
+      element.value = product;
+    },
+    product
+  );
+
+  // Simulate pressing the "Enter" key to search for the product
+  await page.keyboard.press("Enter");
+  await page.waitForLoadState("domcontentloaded");
+
+  // Take a screenshot of the page
+  //NOTE: This is just for testing purposes
+  await page.screenshot({ path: "ssOlimpica.png" });
+
+  await browser.close();
+  console.log("fin");
+  return [];
+};
+
+const searchProductExito = async (product) => {
+  console.log("inicio Exito");
+  const browser = await chromium.launch();
+  const page = await browser.newPage();
+  await page.goto("https://www.exito.com/");
+  await page.waitForLoadState("domcontentloaded");
+
+  // Write the product in the search bar
+  await page.click("[data-testid='store-input']");
+  await page.$eval(
+    "[data-testid='store-input']",
+    (element, product) => {
+      element.value = product;
+    },
+    product
+  );
+  // Simulate pressing the Enter key
+  await page.keyboard.press("Enter");
+  await page.waitForLoadState("networkidle");
+
+  // Order the products by price
+  /*await page.waitForSelector("[data-testid='store-dropdown-button']");
+  await page.click("[data-testid='store-dropdown-button']");
+  await page.waitForLoadState("domcontentloaded");*/
+
+  //Get the name of the first 3 products
+  const productsName = await page.$$eval(
+    "[data-testid='store-product-card-content']",
+    (el_names) =>
+      el_names.slice(0, 3).map((el_name) => {
+        return el_name.children[0].children[0].children[1].children[0].textContent.trim();
+      })
+  );
+  console.log(productsName);
+
+  //Get the price of the first 3 products
+  const prices = await page.$$eval(
+    ".ProductPrice_container__price__XmMWA",
+    (el_prices) =>
+      el_prices.slice(0, 3).map((el_price) => {
+        return el_price.textContent.trim().split(" ")[1];
+      })
+  );
+  console.log(prices);
+
+  //Get the link of the first 3 products
+  const productsLink = await page.$$eval(
+    "[data-testid='store-product-card-image']",
+    (el_links) =>
+      el_links.slice(0, 3).map((el_link) => {
+        return el_link.children[0].href;
+      })
+  );
+  console.log(productsLink);
+
+  //Get the imgs of the first 3 products
+  const productsImg = await page.$$eval(
+    "[data-testid='store-product-card-image']",
+    (el_imgs) =>
+      el_imgs.slice(0, 3).map((el_img) => {
+        return el_img.children[0].children[0].src;
+      })
+  );
+  console.log(productsImg);
+
+  //Get the description of the first 3 products
+  const productsDescription = [];
+
+  /*for (let i = 0; i < productsImg.length; i++) {
+    await page.waitForSelector("[data-testid='product-link']");
+    const productElements = await page.$$("[data-testid='product-link']");
+
+    await productElements[i].click();
+    await page.waitForLoadState("domcontentloaded");
+
+    await page.waitForSelector(".flix-media_flix-media-content__Wl6M8");
+    const prodDesc_i = await page.$eval(
+      ".product-description_fs-product-description-content__HPsDQ",
+      (el_desc) =>
+        el_desc.children[0].children[0].children[0].children[0].textContent.trim()
+    );
+    productsDescription.push(prodDesc_i);
+    // Navigate back to the previous page
+    await page.goBack();
+  }
+  console.log(productsDescription);*/
+
+  // Take a screenshot of the page
+  //NOTE: This is just for testing purposes
+  await page.screenshot({ path: "ssExito.png" });
+
+  await browser.close();
+  console.log("Fin Exito");
+  return [];
 };
