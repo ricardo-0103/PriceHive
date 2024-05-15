@@ -158,41 +158,27 @@ const searchProductAlkosto = async (product) => {
   // Simulate pressing the "Enter" key to search for the product
   await page.keyboard.press("Enter");
   await page.waitForLoadState("networkidle");
-
-  // Order the products by price
-  await page.waitForSelector("#sort-by-wrapper");
-  await page.click("#sort-by-wrapper");
-  await page.waitForLoadState("domcontentloaded");
-  // Click on the third child of the ul element
-  await page.click(
-    ".float-select--list.js-float-list.open > ul > :nth-child(3)"
-  );
-  await page.waitForLoadState("domcontentloaded");
+  await page.screenshot({ path: "ssAlkosto.png" });
 
   await page.waitForSelector(
     ".ais-InfiniteHits-item.product__item.js-product-item.js-algolia-product-click"
   );
-
-  //NOTE:
-  console.log("foto ordenamiento");
-  await page.screenshot({ path: "ssAlkosto1.png" });
-
-  //Get the name of the first 3 products
+  //Get the name of the first 5 products
   const productsName = await page.$$eval(
     ".ais-InfiniteHits-item.product__item.js-product-item.js-algolia-product-click",
     (el_names) =>
-      el_names.slice(0, 3).map((el_name) => {
+      el_names.slice(0, 5).map((el_name) => {
         return el_name.children[0].children[0].textContent.trim();
       })
   );
 
   const numberOfProducts = productsName.length;
 
-  //Get the img of the first 3 products
-  const productImgs = await page.$$eval(
+  //Get the img of the first 5 products
+  const productsImg = await page.$$eval(
     ".ais-InfiniteHits-item.product__item.js-product-item.js-algolia-product-click",
     (el_names) =>
-      el_names.slice(0, 3).map((el_name) => {
+      el_names.slice(0, 5).map((el_name) => {
         return el_name.children[1].children[0].children[0].src;
       })
   );
@@ -238,22 +224,19 @@ const searchProductAlkosto = async (product) => {
   }
 
   await page.waitForLoadState("domcontentloaded");
-  await page.screenshot({ path: "ssAlkosto.png" });
   console.log("fin");
 
   await browser.close();
 
   //Create the JSON object of the products
-  const products = [];
-  for (let i = 0; i < numberOfProducts; i++) {
-    products.push({
-      name: productsName[i],
-      price: prices[i],
-      img: productImgs[i],
-      description: productsDescription[i],
-      link: productsLink[i],
-    });
-  }
+  const products = createJSONObject(
+    productsName,
+    prices,
+    productsImg,
+    productsDescription,
+    productsLink,
+    numberOfProducts
+  );
 
   return products;
 };
@@ -381,4 +364,45 @@ const searchProductExito = async (product) => {
   await browser.close();
   console.log("Fin Exito");
   return [];
+};
+
+const createJSONObject = (
+  productsName,
+  prices,
+  productsImg,
+  productsDescription,
+  productsLink,
+  numberOfProducts
+) => {
+  const products = [];
+  for (let i = 0; i < numberOfProducts; i++) {
+    products.push({
+      name: productsName[i],
+      price: prices[i],
+      img: productsImg[i],
+      description: productsDescription[i],
+      link: productsLink[i],
+    });
+  }
+
+  products.sort((a, b) => {
+    // Extract the numeric values of prices
+    const priceA = parseFloat(
+      a.price.replace(/\$/g, "").replace(/\./g, "").replace(",", ".")
+    );
+    const priceB = parseFloat(
+      b.price.replace(/\$/g, "").replace(/\./g, "").replace(",", ".")
+    );
+
+    // Compare the prices
+    return priceA - priceB;
+  });
+
+  // Filter out products whose names include the word 'case'
+  const filteredProducts = products.filter(
+    (product) => !product.name.toLowerCase().includes("case")
+  );
+
+  //Get the first 3 products
+  return filteredProducts.slice(0, 3);
 };
