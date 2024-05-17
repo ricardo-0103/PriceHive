@@ -14,11 +14,12 @@ app.get("/", (req, res) => {
 
 app.post("/product", async (req, res) => {
   const productName = req.body.product;
-  //const productsMercadoLibre = await searchProductMercadoLibre(productName);
-  const productsAlkosto = await searchProductAlkosto(productName);
+  const productsMercadoLibre = await searchProductMercadoLibre(productName);
+  //const productsAlkosto = await searchProductAlkosto(productName);
+
   //const productsOlimpica = await searchProductOlimpica(productName);
   //const productsExito = await searchProductExito(productName);
-  res.render("index.ejs", { products: productsAlkosto });
+  res.render("index.ejs", { products: productsMercadoLibre });
 });
 
 app.listen(port, () => {
@@ -26,7 +27,7 @@ app.listen(port, () => {
 });
 
 const searchProductMercadoLibre = async (product) => {
-  console.log("inicio");
+  console.log("inicio Mercado Libre");
   const browser = await chromium.launch();
   const page = await browser.newPage();
   await page.goto("https://www.mercadolibre.com.co/");
@@ -44,24 +45,14 @@ const searchProductMercadoLibre = async (product) => {
   await page.click(".nav-search-btn");
   await page.waitForLoadState("domcontentloaded");
 
-  //Order the products by price REVIEW:
-  await page.waitForSelector(".andes-dropdown__trigger");
-  await page.click(".andes-dropdown__trigger");
-  await page.waitForLoadState("domcontentloaded");
-  await page.waitForSelector(".andes-card__content");
-
-  // Click on the second child of the ul element
-  await page.click(
-    ".andes-list.andes-floating-menu.andes-list--default.andes-list--selectable > :nth-child(2)"
+  //Get the price of the first 5 products
+  await page.waitForSelector(
+    ".andes-money-amount.ui-search-price__part.ui-search-price__part--medium.andes-money-amount--cents-superscript"
   );
-  await page.waitForLoadState("domcontentloaded");
-
-  //Get the price of the first 3 products
-  await page.waitForSelector(".price");
   const prices = await page.$$eval(
     ".andes-money-amount.ui-search-price__part.ui-search-price__part--medium.andes-money-amount--cents-superscript",
     (el_prices) =>
-      el_prices.slice(0, 3).map((el_price) => {
+      el_prices.slice(0, 5).map((el_price) => {
         // Get the second child element (index 1)
         const priceElement = el_price.children[1];
         // Return the text content of the price element
@@ -69,25 +60,25 @@ const searchProductMercadoLibre = async (product) => {
       })
   );
 
-  //Get the name of the first 3 products
+  //Get the name of the first 5 products
   await page.waitForSelector(".ui-search-item__title");
   const productsName = await page.$$eval(".ui-search-item__title", (el_names) =>
-    el_names.slice(0, 3).map((el_name) => {
+    el_names.slice(0, 5).map((el_name) => {
       return el_name.textContent.trim();
     })
   );
 
-  //Get the link of the img of the first 3 products
+  //Get the link of the img of the first 5 products
   await page.waitForSelector(".ui-search-result-image__element");
   const productsImg = await page.$$eval(
     ".ui-search-result-image__element",
     (el_imgs) =>
-      el_imgs.slice(0, 3).map((el_img) => {
+      el_imgs.slice(0, 5).map((el_img) => {
         return el_img.src;
       })
   );
 
-  //Get the description of the first 3 products
+  //Get the description of the first 5 products
   const numberOfProducts = prices.length;
   const productsDescription = [];
   const productsLink = [];
@@ -109,7 +100,20 @@ const searchProductMercadoLibre = async (product) => {
         });
       }
     );
-    productsDescription.push(prodDesc_i);
+
+    //Some products don't have the description where it should be, so we need to look for it below the product
+    if (prodDesc_i.length != 0) {
+      productsDescription.push(prodDesc_i);
+    } else {
+      const prodDesc = await page.$eval(
+        ".ui-pdp-description__content",
+        (desc) => {
+          return desc.textContent.trim();
+        }
+      );
+
+      productsDescription.push([prodDesc.slice(0, 300) + "..."]);
+    }
 
     // Get the link of the first 3 products, in case the user wants to buy one of them
     productsLink.push(page.url());
@@ -121,20 +125,18 @@ const searchProductMercadoLibre = async (product) => {
   // Take a screenshot of the page
   //NOTE: This is just for testing purposes
   //await page.screenshot({ path: "ssMercadoLibre.png" });
-  console.log("listo");
+  console.log("fin Mercado Libre");
   await browser.close();
 
   //Create the JSON object of the products
-  const products = [];
-  for (let i = 0; i < numberOfProducts; i++) {
-    products.push({
-      name: productsName[i],
-      price: prices[i],
-      img: productsImg[i],
-      description: productsDescription[i],
-      link: productsLink[i],
-    });
-  }
+  const products = createJSONObject(
+    productsName,
+    prices,
+    productsImg,
+    productsDescription,
+    productsLink,
+    numberOfProducts
+  );
 
   return products;
 };
