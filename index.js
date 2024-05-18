@@ -14,12 +14,12 @@ app.get("/", (req, res) => {
 
 app.post("/product", async (req, res) => {
   const productName = req.body.product;
-  const productsMercadoLibre = await searchProductMercadoLibre(productName);
+  //const productsMercadoLibre = await searchProductMercadoLibre(productName);
   //const productsAlkosto = await searchProductAlkosto(productName);
 
   //const productsOlimpica = await searchProductOlimpica(productName);
-  //const productsExito = await searchProductExito(productName);
-  res.render("index.ejs", { products: productsMercadoLibre });
+  const productsExito = await searchProductExito(productName);
+  res.render("index.ejs", { products: productsExito });
 });
 
 app.listen(port, () => {
@@ -32,8 +32,9 @@ const searchProductMercadoLibre = async (product) => {
   const page = await browser.newPage();
   await page.goto("https://www.mercadolibre.com.co/");
   await page.waitForLoadState("domcontentloaded");
-  await page.click("#cb1-edit");
+
   //Write the product in the search bar
+  await page.click("#cb1-edit");
   await page.$eval(
     "#cb1-edit",
     (element, product) => {
@@ -290,74 +291,97 @@ const searchProductExito = async (product) => {
   );
   // Simulate pressing the Enter key
   await page.keyboard.press("Enter");
-  await page.waitForLoadState("networkidle");
+  //await page.waitForLoadState("networkidle");
 
-  // Order the products by price
-  /*await page.waitForSelector("[data-testid='store-dropdown-button']");
-  await page.click("[data-testid='store-dropdown-button']");
-  await page.waitForLoadState("domcontentloaded");*/
-
-  //Get the name of the first 3 products
-  const productsName = await page.$$eval(
-    "[data-testid='store-product-card-content']",
-    (el_names) =>
-      el_names.slice(0, 3).map((el_name) => {
-        return el_name.children[0].children[0].children[1].children[0].textContent.trim();
-      })
-  );
-  console.log(productsName);
-
-  //Get the price of the first 3 products
-  const prices = await page.$$eval(
-    ".ProductPrice_container__price__XmMWA",
-    (el_prices) =>
-      el_prices.slice(0, 3).map((el_price) => {
-        return el_price.textContent.trim().split(" ")[1];
-      })
-  );
-  console.log(prices);
-
-  //Get the link of the first 3 products
-  const productsLink = await page.$$eval(
-    "[data-testid='store-product-card-image']",
-    (el_links) =>
-      el_links.slice(0, 3).map((el_link) => {
-        return el_link.children[0].href;
-      })
-  );
-  console.log(productsLink);
-
-  //Get the imgs of the first 3 products
-  const productsImg = await page.$$eval(
-    "[data-testid='store-product-card-image']",
-    (el_imgs) =>
-      el_imgs.slice(0, 3).map((el_img) => {
-        return el_img.children[0].children[0].src;
-      })
-  );
-  console.log(productsImg);
-
-  //Get the description of the first 3 products
+  await page.waitForSelector("[data-testid='store-product-card-content']");
+  const productsName = [];
+  const prices = [];
+  const productsImg = [];
+  const productsLink = [];
   const productsDescription = [];
 
-  /*for (let i = 0; i < productsImg.length; i++) {
-    await page.waitForSelector("[data-testid='product-link']");
-    const productElements = await page.$$("[data-testid='product-link']");
+  await page.waitForSelector(".ProductPrice_container__price__XmMWA");
+  //Get the elements that have the information of the product
+  const numberOfElements = await page.$$(
+    "[data-testid='store-product-card-content']"
+  );
 
-    await productElements[i].click();
-    await page.waitForLoadState("domcontentloaded");
-
-    await page.waitForSelector(".flix-media_flix-media-content__Wl6M8");
-    const prodDesc_i = await page.$eval(
-      ".product-description_fs-product-description-content__HPsDQ",
-      (el_desc) =>
-        el_desc.children[0].children[0].children[0].children[0].textContent.trim()
+  for (let i = 0; i < numberOfElements.length; i++) {
+    await page.waitForSelector(".ProductPrice_container__price__XmMWA");
+    //Get the elements that have the information of the product
+    const elementsName_Link = await page.$$(
+      "[data-testid='store-product-card-content']"
     );
-    productsDescription.push(prodDesc_i);
-    // Navigate back to the previous page
-    await page.goBack();
+    const elementsPrice = await page.$$(
+      ".ProductPrice_container__price__XmMWA"
+    );
+    const elementsImg = await page.$$(".imagen_plp");
+
+    //Get the title of the product
+    const title = await elementsName_Link[i].evaluate((tit) =>
+      tit.children[0].children[0].children[1].children[0].textContent.trim()
+    );
+
+    //Check if the title of the element includes the product the user wants
+    if (verifyNameProduct(product, title)) {
+      productsName.push(title);
+
+      //Get the link
+      const link = await elementsName_Link[i].evaluate(
+        (link) => link.children[0].children[0].children[1].children[0].href
+      );
+      productsLink.push(link);
+
+      //Get the price
+      const price = await elementsPrice[i].evaluate((price) =>
+        price.textContent.trim()
+      );
+      prices.push(price);
+
+      //Get the img src
+      const src = await elementsImg[i].evaluate((img) => img.src);
+      productsImg.push(src);
+
+      //Get the description
+      await page.goto(link);
+      await page.waitForLoadState("domcontentloaded");
+
+      await page.waitForSelector("#product-details-content-panel--0");
+      // Get the specifications and push them into an array
+      const specifications = await page.evaluate(() => {
+        const specElements = document.querySelectorAll(
+          '.product-specifications_fs-product-details-content__upn_w [data-fs-content-specification="true"] div'
+        );
+        const specsArray = [];
+
+        specElements.forEach((specElement) => {
+          const title = specElement
+            .querySelector('[data-fs-title-specification="true"]')
+            .textContent.trim();
+          const text = specElement
+            .querySelector('[data-fs-text-specification="true"]')
+            .textContent.trim();
+          specsArray.push(`${title}: ${text}`);
+        });
+
+        return specsArray;
+      });
+      productsDescription.push(specifications);
+
+      await page.goBack();
+      await page.waitForLoadState("domcontentloaded");
+    }
+
+    //Get only the first 5 products
+    if (productsName.length === 5) {
+      break;
+    }
   }
-  console.log(productsDescription);*/
+  console.log(productsName);
+  console.log(prices);
+  console.log(productsImg);
+  console.log(productsLink);
+  console.log(productsDescription);
 
   // Take a screenshot of the page
   //NOTE: This is just for testing purposes
@@ -365,7 +389,17 @@ const searchProductExito = async (product) => {
 
   await browser.close();
   console.log("Fin Exito");
-  return [];
+
+  //Create the JSON object of the products
+  const products = createJSONObject(
+    productsName,
+    prices,
+    productsImg,
+    productsDescription,
+    productsLink,
+    productsName.length
+  );
+  return products;
 };
 
 const createJSONObject = (
@@ -407,4 +441,15 @@ const createJSONObject = (
 
   //Get the first 3 products
   return filteredProducts.slice(0, 3);
+};
+
+const verifyNameProduct = (product, title) => {
+  const words = product.split(" ");
+  for (const word of words) {
+    if (!title.toLowerCase().includes(word.toLowerCase())) {
+      return false;
+    }
+  }
+
+  return !title.toLowerCase().includes("case");
 };
