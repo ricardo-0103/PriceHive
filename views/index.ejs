@@ -9,7 +9,12 @@
   <body>
     <h1>PriceHive</h1>
     <form action="/product" method="POST">
-      <input type="text" name="product" id="product" />
+      <input
+        type="text"
+        name="product"
+        id="product"
+        placeholder="¿Qué buscas hoy?"
+      />
       <input type="submit" id="search-btn" value="Buscar" />
     </form>
     <div class="products_container">
@@ -32,7 +37,7 @@
     <div class="pagination_container">
       <div class="pagination">
         <% if (currentPage > 1) { %>
-        <a href="/products?page=<%= currentPage - 1 %>">Previous</a>
+        <a href="/products?page=<%= currentPage - 1 %>">Anterior</a>
         <% } %> <% for (let i = 1; i <= totalPages; i++) { %>
         <a
           href="/products?page=<%= i %>"
@@ -40,7 +45,7 @@
           ><%= i %></a
         >
         <% } %> <% if (currentPage < totalPages) { %>
-        <a href="/products?page=<%= currentPage + 1 %>">Next</a>
+        <a href="/products?page=<%= currentPage + 1 %>">Siguiente</a>
         <% } %>
       </div>
     </div>

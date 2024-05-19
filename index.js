@@ -217,18 +217,21 @@ const searchProductAlkosto = async (product) => {
   const productsDescription = [];
   const prices = [];
   for (let i = 0; i < numberOfProducts; i++) {
+    // Wait for the selector
     await page.waitForSelector(
-      ".product__item__information__key-features.js-key-features"
+      ".product__item__top__title.js-algolia-product-click.js-algolia-product-title"
     );
 
-    const productElements = await page.$$(
-      ".js-view-details.js-algolia-product-click"
+    // Get the data-url attribute of the element
+    const productUrls = await page.$$eval(
+      ".product__item__top__title.js-algolia-product-click.js-algolia-product-title",
+      (elements) => elements.map((el) => el.getAttribute("data-url"))
     );
-
-    await productElements[i].click();
+    await page.goto(`https://www.alkosto.com.co${productUrls[i]}`);
     await page.waitForLoadState("domcontentloaded");
     await page.screenshot({ path: `ssAlkosto.png` });
 
+    await page.waitForSelector(".tab-details__keyFeatures--list");
     // Extract the descriptions of the product
     const prodDesc_i = await page.$$eval(
       ".tab-details__keyFeatures--list li", // Targeting individual list items (li elements)
@@ -272,6 +275,7 @@ const searchProductAlkosto = async (product) => {
 
   return products;
 };
+
 const searchProductOlimpica = async (product) => {
   console.log("inicio");
   const browser = await chromium.launch();
