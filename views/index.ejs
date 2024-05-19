@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="style.css" />
     <title>PriceHive</title>
   </head>
   <body>
@@ -11,18 +12,21 @@
       <input type="text" name="product" id="product" />
       <input type="submit" id="search-btn" value="Buscar" />
     </form>
-    <% if (locals.products) { %> <% products.forEach((prod) => { %>
-
-    <img src="<%=prod.img%>" alt="img" />
-    <h2>Producto: <%= prod.name %></h2>
-    <h3>Precio: <%= prod.price %></h3>
-    <h4>Descripción %></h4>
-    <ul>
-      <% prod.description.forEach((desc) => { %>
-      <li><%= desc %></li>
-      <% }) %>
-    </ul>
-    <a href="<%= prod.link %>">Puede comprar el producto aquí</a>
-    <% }) %> <% } %>
+    <div class="products_container">
+      <% if (locals.products) { %> <% products.forEach((prod) => { %>
+      <div class="product">
+        <img src="<%=prod.img%>" alt="img" />
+        <h2><%= prod.name %> (<%= prod.shop %>)</h2>
+        <h3>Precio: <%= prod.price %></h3>
+        <h4>Descripción %></h4>
+        <ul>
+          <% prod.description.forEach((desc) => { %>
+          <li><%= desc %></li>
+          <% }) %>
+        </ul>
+        <a href="<%= prod.link %>">Puede comprar el producto aquí</a>
+      </div>
+      <% }) %> <% } %>
+    </div>
   </body>
 </html>

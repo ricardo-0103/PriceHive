@@ -12,14 +12,24 @@ app.get("/", (req, res) => {
   res.render("index.ejs");
 });
 
+const products = [];
 app.post("/product", async (req, res) => {
   const productName = req.body.product;
-  //const productsMercadoLibre = await searchProductMercadoLibre(productName);
-  //const productsAlkosto = await searchProductAlkosto(productName);
+
+  const [productsMercadoLibre, productsAlkosto, productsExito] =
+    await Promise.all([
+      searchProductMercadoLibre(productName),
+      searchProductAlkosto(productName),
+      searchProductExito(productName),
+    ]);
+
+  products.push(...productsMercadoLibre);
+  products.push(...productsAlkosto);
+  products.push(...productsExito);
 
   //const productsOlimpica = await searchProductOlimpica(productName);
-  const productsExito = await searchProductExito(productName);
-  res.render("index.ejs", { products: productsExito });
+  //const productsExito = await searchProductExito(productName);
+  res.render("index.ejs", { products: products });
 });
 
 app.listen(port, () => {
@@ -131,6 +141,7 @@ const searchProductMercadoLibre = async (product) => {
 
   //Create the JSON object of the products
   const products = createJSONObject(
+    "Mercado Libre",
     productsName,
     prices,
     productsImg,
@@ -143,7 +154,7 @@ const searchProductMercadoLibre = async (product) => {
 };
 
 const searchProductAlkosto = async (product) => {
-  console.log("inicio");
+  console.log("inicio Alkosto");
   const browser = await chromium.launch();
   const page = await browser.newPage();
   await page.goto("https://www.alkosto.com.co/");
@@ -160,8 +171,8 @@ const searchProductAlkosto = async (product) => {
   );
   // Simulate pressing the "Enter" key to search for the product
   await page.keyboard.press("Enter");
-  await page.waitForLoadState("networkidle");
-  await page.screenshot({ path: "ssAlkosto.png" });
+  // await page.waitForLoadState("networkidle");
+  // await page.screenshot({ path: "ssAlkosto.png" });
 
   await page.waitForSelector(
     ".ais-InfiniteHits-item.product__item.js-product-item.js-algolia-product-click"
@@ -194,12 +205,14 @@ const searchProductAlkosto = async (product) => {
     await page.waitForSelector(
       ".product__item__information__key-features.js-key-features"
     );
+
     const productElements = await page.$$(
       ".js-view-details.js-algolia-product-click"
     );
 
     await productElements[i].click();
     await page.waitForLoadState("domcontentloaded");
+    await page.screenshot({ path: `ssAlkosto.png` });
 
     // Extract the descriptions of the product
     const prodDesc_i = await page.$$eval(
@@ -227,12 +240,13 @@ const searchProductAlkosto = async (product) => {
   }
 
   await page.waitForLoadState("domcontentloaded");
-  console.log("fin");
+  console.log("fin Alkosto");
 
   await browser.close();
 
   //Create the JSON object of the products
   const products = createJSONObject(
+    "Alkosto",
     productsName,
     prices,
     productsImg,
@@ -377,11 +391,6 @@ const searchProductExito = async (product) => {
       break;
     }
   }
-  console.log(productsName);
-  console.log(prices);
-  console.log(productsImg);
-  console.log(productsLink);
-  console.log(productsDescription);
 
   // Take a screenshot of the page
   //NOTE: This is just for testing purposes
@@ -392,6 +401,7 @@ const searchProductExito = async (product) => {
 
   //Create the JSON object of the products
   const products = createJSONObject(
+    "Exito",
     productsName,
     prices,
     productsImg,
@@ -403,6 +413,7 @@ const searchProductExito = async (product) => {
 };
 
 const createJSONObject = (
+  shopName,
   productsName,
   prices,
   productsImg,
@@ -413,6 +424,7 @@ const createJSONObject = (
   const products = [];
   for (let i = 0; i < numberOfProducts; i++) {
     products.push({
+      shop: shopName,
       name: productsName[i],
       price: prices[i],
       img: productsImg[i],
@@ -434,13 +446,8 @@ const createJSONObject = (
     return priceA - priceB;
   });
 
-  // Filter out products whose names include the word 'case'
-  const filteredProducts = products.filter(
-    (product) => !product.name.toLowerCase().includes("case")
-  );
-
   //Get the first 3 products
-  return filteredProducts.slice(0, 3);
+  return products.slice(0, 3);
 };
 
 const verifyNameProduct = (product, title) => {
