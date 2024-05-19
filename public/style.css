@@ -83,3 +83,33 @@ a:hover {
 .product h4 {
   margin-bottom: 0%;
 }
+
+.pagination_container {
+  display: flex;
+  justify-content: center;
+}
+
+.pagination {
+  margin: 20px 0;
+  display: flex;
+  gap: 10px;
+}
+
+.pagination a {
+  padding: 10px 15px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  text-decoration: none;
+  color: #007bff;
+}
+
+.pagination a:hover {
+  background-color: #007bff;
+  color: white;
+}
+
+.pagination a.active {
+  background-color: #007bff;
+  color: white;
+  border-color: #007bff;
+}

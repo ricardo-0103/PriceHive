@@ -12,8 +12,9 @@ app.get("/", (req, res) => {
   res.render("index.ejs");
 });
 
-const products = [];
+let products;
 app.post("/product", async (req, res) => {
+  products = [];
   const productName = req.body.product;
 
   const [productsMercadoLibre, productsAlkosto, productsExito] =
@@ -29,7 +30,21 @@ app.post("/product", async (req, res) => {
 
   //const productsOlimpica = await searchProductOlimpica(productName);
   //const productsExito = await searchProductExito(productName);
-  res.render("index.ejs", { products: products });
+  res.redirect("/products?page=1");
+});
+
+app.get("/products", (req, res) => {
+  const page = parseInt(req.query.page, 10) || 1;
+  const pageSize = 5;
+  const startIndex = (page - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedProducts = products.slice(startIndex, endIndex);
+
+  res.render("index.ejs", {
+    products: paginatedProducts,
+    currentPage: page,
+    totalPages: Math.ceil(products.length / pageSize),
+  });
 });
 
 app.listen(port, () => {
