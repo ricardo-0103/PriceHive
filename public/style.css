@@ -172,3 +172,29 @@ input[type="submit"]:hover {
 .sort_options form {
   margin-bottom: 0;
 }
+
+/* Loading icon styles */
+#loading-icon {
+  display: none; /* Oculto por defecto */
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+}
+
+#loading-icon img {
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite; /* Añadir animación de rotación */
+}
+
+/* Animación de rotación */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
