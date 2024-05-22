@@ -6,6 +6,8 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
+  background-color: #bfcfe7;
+  /* background-color: #9ba4b5; */
 }
 
 h1 {
@@ -50,7 +52,7 @@ input[type="submit"]:hover {
   border: 1px solid #ddd;
   border-radius: 8px;
   padding: 20px;
-  width: 300px;
+  width: 400px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
