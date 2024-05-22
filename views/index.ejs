@@ -8,6 +8,9 @@
   </head>
   <body>
     <h1>PriceHive</h1>
+    <div id="loading-icon" class="loading ">
+      <img src="/images/cargando.png" alt="Loading...">
+    </div>
     <form action="/product" method="POST">
       <input
         type="text"
@@ -17,8 +20,22 @@
       />
       <input type="submit" id="search-btn" value="Buscar" />
     </form>
+    <% if (locals.products) { %>
+      <script>
+        document.getElementById('loading-icon').style.display = 'none';
+      </script>
+      <div class="sort_options">
+        <form action="/products" method="GET">
+          <input type="submit" value="Ordenar" />
+          <select name="sortBy" id="sortBy">
+            <option value="shop" <% if (sortBy === 'shop') { %> selected <% } %>>Tienda</option>
+            <option value="lowPrice" <% if (sortBy === 'lowPrice') { %> selected <% } %>>Precio más bajo</option>
+            <option value="highPrice" <% if (sortBy === 'highPrice') { %> selected <% } %>>Precio más alto</option>
+          </select>
+        </form>
+      </div>
     <div class="products_container">
-      <% if (locals.products) { %> <% products.forEach((prod) => { %>
+      <% products.forEach((prod) => { %>
       <div class="product">
         <img src="<%=prod.img%>" alt="img" />
         <h2><%= prod.name %> (<%= prod.shop %>)</h2>
@@ -50,5 +67,11 @@
       </div>
     </div>
     <% } %>
+
+    <script>
+      document.querySelector('form').addEventListener('submit', function() {
+        document.getElementById('loading-icon').style.display = 'block';
+      });
+    </script>
   </body>
 </html>

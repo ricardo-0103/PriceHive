@@ -6,6 +6,8 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
+  background-color: #bfcfe7;
+  /* background-color: #9ba4b5; */
 }
 
 h1 {
@@ -50,7 +52,7 @@ input[type="submit"]:hover {
   border: 1px solid #ddd;
   border-radius: 8px;
   padding: 20px;
-  width: 300px;
+  width: 400px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
@@ -126,4 +128,75 @@ input[type="submit"]:hover {
   background-color: #007bff;
   color: white;
   border-color: #007bff;
+}
+
+/* Sort Options */
+.sort_options {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 20px 0;
+  padding: 10px;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.sort_options form {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+}
+
+.sort_options select {
+  padding: 10px;
+  margin: 10px 0;
+  margin-left: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.sort_options input[type="submit"] {
+  border: none;
+  background-color: #333;
+  color: #fff;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.sort_options input[type="submit"]:hover {
+  background-color: #555;
+}
+
+.sort_options form {
+  margin-bottom: 0;
+}
+
+/* Loading icon styles */
+#loading-icon {
+  display: none; /* Oculto por defecto */
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+}
+
+#loading-icon img {
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite; /* Añadir animación de rotación */
+}
+
+/* Animación de rotación */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }

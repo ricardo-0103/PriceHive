@@ -28,17 +28,23 @@ app.post("/product", async (req, res) => {
   res.redirect("/products?page=1");
 });
 
+let sortBy = "shop"; // Default sort by shop
 app.get("/products", (req, res) => {
   const page = parseInt(req.query.page, 10) || 1;
   const pageSize = 5;
   const startIndex = (page - 1) * pageSize;
   const endIndex = startIndex + pageSize;
-  const paginatedProducts = products.slice(startIndex, endIndex);
+
+  sortBy = req.query.sortBy || sortBy;
+  const sortedProducts = orderProducts(products, sortBy);
+
+  const paginatedProducts = sortedProducts.slice(startIndex, endIndex);
 
   res.render("index.ejs", {
     products: paginatedProducts,
     currentPage: page,
     totalPages: Math.ceil(products.length / pageSize),
+    sortBy,
   });
 });
 
@@ -328,7 +334,6 @@ const searchProductExito = async (product) => {
   const productsLink = [];
   const productsDescription = [];
 
-  await page.waitForSelector(".ProductPrice_container__price__XmMWA");
   //Get the elements that have the information of the product
   const numberOfElements = await page.$$(
     "[data-testid='store-product-card-content']"
@@ -598,4 +603,41 @@ const verifyNameProduct = (product, title) => {
   }
 
   return !title.toLowerCase().includes("case");
+};
+
+const orderProducts = (products, sortBy) => {
+  let tempProducts = [...products];
+  switch (sortBy) {
+    case "lowPrice":
+      tempProducts.sort((a, b) => {
+        // Extract the numeric values of prices
+        const priceA = parseFloat(
+          a.price.replace(/\$/g, "").replace(/\./g, "").replace(",", ".")
+        );
+        const priceB = parseFloat(
+          b.price.replace(/\$/g, "").replace(/\./g, "").replace(",", ".")
+        );
+
+        // Compare the prices
+        return priceA - priceB;
+      });
+      break;
+    case "highPrice":
+      tempProducts.sort((a, b) => {
+        // Extract the numeric values of prices
+        const priceA = parseFloat(
+          a.price.replace(/\$/g, "").replace(/\./g, "").replace(",", ".")
+        );
+        const priceB = parseFloat(
+          b.price.replace(/\$/g, "").replace(/\./g, "").replace(",", ".")
+        );
+
+        // Compare the prices
+        return priceB - priceA;
+      });
+      break;
+    default:
+      break;
+  }
+  return tempProducts;
 };
