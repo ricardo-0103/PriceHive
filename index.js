@@ -14,6 +14,7 @@ app.get("/", (req, res) => {
 
 let products;
 let error = false;
+let noProducts = false;
 app.post("/product", async (req, res) => {
   products = [];
   const productName = req.body.product;
@@ -37,24 +38,10 @@ app.post("/product", async (req, res) => {
     })
   );
 
-  // const [
-  //   productsFalabella,
-  //   productsExito,
-  //   productsAlkosto,
-  //   productsMercadoLibre,
-  // ] = await Promise.all([
-  //   searchProductFalabella(productName),
-  //   searchProductExito(productName),
-  //   searchProductAlkosto(productName),
-  //   searchProductMercadoLibre(productName),
-  // ]);
+  // Verify if there are products
+  noProducts = products.length === 0;
 
-  // products.push(...productsFalabella);
-  // products.push(...productsExito);
-  // products.push(...productsAlkosto);
-  // products.push(...productsMercadoLibre);
-
-  res.redirect("/products?page=1");
+  res.redirect(`/products?page=1`);
 });
 
 let sortBy = "shop"; // Default sort by shop
@@ -74,6 +61,7 @@ app.get("/products", (req, res) => {
     currentPage: page,
     totalPages: Math.ceil(products.length / pageSize),
     sortBy,
+    noProducts,
   });
 });
 
@@ -128,19 +116,20 @@ const searchProductMercadoLibre = async (product) => {
     );
 
     //Get the link of the img of the first 5 products
-    await page.waitForSelector(".ui-search-result-image__element");
+    /*await page.waitForSelector(".ui-search-result-image__element");
     const productsImg = await page.$$eval(
       ".ui-search-result-image__element",
       (el_imgs) =>
         el_imgs.slice(0, 5).map((el_img) => {
           return el_img.src;
         })
-    );
+    );*/
 
     //Get the description of the first 5 products
     const numberOfProducts = prices.length;
     const productsDescription = [];
     const productsLink = [];
+    const productsImg = [];
 
     for (let i = 0; i < numberOfProducts; i++) {
       await page.waitForSelector(".ui-search-result-image__element");
@@ -174,7 +163,18 @@ const searchProductMercadoLibre = async (product) => {
         productsDescription.push([prodDesc.slice(0, 300) + "..."]);
       }
 
-      // Get the link of the first 3 products, in case the user wants to buy one of them
+      //Get the link of the img of the first 5 products
+
+      await page.waitForSelector(".ui-pdp-image.ui-pdp-gallery__figure__image");
+      const prodImg = await page.$eval(
+        ".ui-pdp-image.ui-pdp-gallery__figure__image",
+        (el_img) => {
+          return el_img.src;
+        }
+      );
+      productsImg.push(prodImg);
+
+      // Get the link of the first 5 products, in case the user wants to buy one of them
       productsLink.push(page.url());
 
       // Navigate back to the previous page
@@ -447,7 +447,11 @@ const searchProductExito = async (product) => {
 
           return specsArray;
         });
-        productsDescription.push(specifications);
+        specifications.length !== 0
+          ? productsDescription.push(specifications)
+          : productsDescription.push([
+              "Más información del producto en el enlace",
+            ]);
 
         await page.goBack();
         await page.waitForLoadState("domcontentloaded");
