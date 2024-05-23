@@ -13,7 +13,6 @@ app.get("/", (req, res) => {
 });
 
 let products;
-let error = false;
 let noProducts = false;
 app.post("/product", async (req, res) => {
   products = [];
@@ -24,6 +23,7 @@ app.post("/product", async (req, res) => {
     searchProductExito,
     searchProductAlkosto,
     searchProductMercadoLibre,
+    searchProductOlimpica,
   ];
 
   await Promise.all(
@@ -32,7 +32,6 @@ app.post("/product", async (req, res) => {
         await searchFunction(productName);
       } catch (err) {
         console.error(`Error occurred in:`, err);
-        error = true;
         return [];
       }
     })
@@ -90,95 +89,95 @@ const searchProductMercadoLibre = async (product) => {
     await page.click(".nav-search-btn");
     await page.waitForLoadState("domcontentloaded");
 
-    //Get the price of the first 5 products
-    await page.waitForSelector(
-      ".andes-money-amount.ui-search-price__part.ui-search-price__part--medium.andes-money-amount--cents-superscript"
-    );
-    const prices = await page.$$eval(
-      ".andes-money-amount.ui-search-price__part.ui-search-price__part--medium.andes-money-amount--cents-superscript",
-      (el_prices) =>
-        el_prices.slice(0, 5).map((el_price) => {
-          // Get the second child element (index 1)
-          const priceElement = el_price.children[1];
-          // Return the text content of the price element
-          return priceElement.textContent.trim();
-        })
-    );
+    // Get all the elements
+    const productElements = await page.$$(".ui-search-item__title");
+    const numberOfProducts = productElements.length;
 
-    //Get the name of the first 5 products
-    await page.waitForSelector(".ui-search-item__title");
-    const productsName = await page.$$eval(
-      ".ui-search-item__title",
-      (el_names) =>
-        el_names.slice(0, 5).map((el_name) => {
-          return el_name.textContent.trim();
-        })
-    );
-
-    //Get the link of the img of the first 5 products
-    /*await page.waitForSelector(".ui-search-result-image__element");
-    const productsImg = await page.$$eval(
-      ".ui-search-result-image__element",
-      (el_imgs) =>
-        el_imgs.slice(0, 5).map((el_img) => {
-          return el_img.src;
-        })
-    );*/
-
-    //Get the description of the first 5 products
-    const numberOfProducts = prices.length;
     const productsDescription = [];
+    const productsName = [];
     const productsLink = [];
     const productsImg = [];
+    const prices = [];
 
     for (let i = 0; i < numberOfProducts; i++) {
-      await page.waitForSelector(".ui-search-result-image__element");
-      const productElements = await page.$$(".ui-search-item__title");
-      // Click on the product title to view its description
-      await productElements[i].click();
-      await page.waitForLoadState("domcontentloaded");
+      //Get the name of the products
+      await page.waitForSelector(".ui-search-item__title");
+      const elementsName = await page.$$(".ui-search-item__title");
 
-      // Extract the descriptions of the product
-      const prodDesc_i = await page.$$eval(
-        ".ui-vpp-highlighted-specs__features-list li", // Targeting individual list items (li elements)
-        (listItems) => {
-          // Map over each list item and return its text content with newline characters
-          return listItems.map((item) => {
-            return item.textContent.trim();
-          });
-        }
+      const title = await elementsName[i].evaluate((el) =>
+        el.textContent.trim()
       );
 
-      //Some products don't have the description where it should be, so we need to look for it below the product
-      if (prodDesc_i.length != 0) {
-        productsDescription.push(prodDesc_i);
-      } else {
-        const prodDesc = await page.$eval(
-          ".ui-pdp-description__content",
-          (desc) => {
-            return desc.textContent.trim();
+      //Get the prices
+      await page.waitForSelector(
+        ".andes-money-amount.ui-search-price__part.ui-search-price__part--medium.andes-money-amount--cents-superscript"
+      );
+      const elementsPrice = await page.$$(
+        ".andes-money-amount.ui-search-price__part.ui-search-price__part--medium.andes-money-amount--cents-superscript"
+      );
+
+      if (verifyNameProduct(product, title)) {
+        productsName.push(title);
+
+        const price = await elementsPrice[i].evaluate((el_price) => {
+          return el_price.textContent.trim();
+        });
+
+        prices.push(price);
+
+        await page.waitForSelector(".ui-search-result-image__element");
+        const productElements = await page.$$(".ui-search-item__title");
+        // Click on the product title to view its description
+        await productElements[i].click();
+        await page.waitForLoadState("domcontentloaded");
+
+        // Extract the descriptions of the product
+        const prodDesc_i = await page.$$eval(
+          ".ui-vpp-highlighted-specs__features-list li", // Targeting individual list items (li elements)
+          (listItems) => {
+            // Map over each list item and return its text content with newline characters
+            return listItems.map((item) => {
+              return item.textContent.trim();
+            });
           }
         );
 
-        productsDescription.push([prodDesc.slice(0, 300) + "..."]);
+        //Some products don't have the description where it should be, so we need to look for it below the product
+        if (prodDesc_i.length != 0) {
+          productsDescription.push(prodDesc_i);
+        } else {
+          const prodDesc = await page.$eval(
+            ".ui-pdp-description__content",
+            (desc) => {
+              return desc.textContent.trim();
+            }
+          );
+
+          productsDescription.push([prodDesc.slice(0, 300) + "..."]);
+        }
+
+        //Get the link of the img
+        await page.waitForSelector(
+          ".ui-pdp-image.ui-pdp-gallery__figure__image"
+        );
+        const prodImg = await page.$eval(
+          ".ui-pdp-image.ui-pdp-gallery__figure__image",
+          (el_img) => {
+            return el_img.src;
+          }
+        );
+        productsImg.push(prodImg);
+
+        // Get the link of the products, in case the user wants to buy one of them
+        productsLink.push(page.url());
+
+        // Navigate back to the previous page
+        await page.goBack();
       }
 
-      //Get the link of the img of the first 5 products
-
-      await page.waitForSelector(".ui-pdp-image.ui-pdp-gallery__figure__image");
-      const prodImg = await page.$eval(
-        ".ui-pdp-image.ui-pdp-gallery__figure__image",
-        (el_img) => {
-          return el_img.src;
-        }
-      );
-      productsImg.push(prodImg);
-
-      // Get the link of the first 5 products, in case the user wants to buy one of them
-      productsLink.push(page.url());
-
-      // Navigate back to the previous page
-      await page.goBack();
+      if (productsName.length === 5) {
+        break;
+      }
     }
 
     // Take a screenshot of the page
@@ -195,7 +194,7 @@ const searchProductMercadoLibre = async (product) => {
       productsImg,
       productsDescription,
       productsLink,
-      numberOfProducts
+      productsName.length
     );
 
     products.push(...productsMercadoLibre);
@@ -325,33 +324,115 @@ const searchProductAlkosto = async (product) => {
 };
 
 const searchProductOlimpica = async (product) => {
-  console.log("inicio");
-  const browser = await chromium.launch();
-  const page = await browser.newPage();
-  await page.goto("https://www.olimpica.com/");
-  await page.waitForLoadState("domcontentloaded");
+  console.log("inicio Olimpica");
+  try {
+    const browser = await chromium.launch();
+    const page = await browser.newPage();
+    await page.goto("https://www.olimpica.com.co/");
 
-  // Write the product in the search bar
-  await page.click("#downshift-0-input");
-  await page.$eval(
-    "#downshift-0-input",
-    (element, product) => {
-      element.value = product;
-    },
-    product
-  );
+    await page.waitForSelector(
+      ".olimpica-advance-geolocation-0-x-containerTrigger"
+    );
 
-  // Simulate pressing the "Enter" key to search for the product
-  await page.keyboard.press("Enter");
-  await page.waitForLoadState("domcontentloaded");
+    // Write the product in the search bar
+    await page.fill("input", product);
+    await page.press("input", "Enter");
 
-  // Take a screenshot of the page
-  //NOTE: This is just for testing purposes
-  await page.screenshot({ path: "ssOlimpica.png" });
+    // Simulate pressing the Enter key
 
-  await browser.close();
-  console.log("fin");
-  return [];
+    const productsName = [];
+    const prices = [];
+    const productsImg = [];
+    const productsLink = [];
+    const productsDescription = [];
+
+    await page.waitForLoadState("domcontentloaded");
+    await page.waitForSelector(".false.olimpica-dinamic-flags-0-x-listPrices");
+    await page.screenshot({ path: "ssOlimpica.png" });
+
+    const numberOfElements = await page.$$(
+      ".vtex-product-summary-2-x-productBrand.vtex-product-summary-2-x-brandName.t-body"
+    );
+
+    for (let i = 0; i < numberOfElements.length; i++) {
+      await page.waitForSelector(
+        ".vtex-product-summary-2-x-productBrand.vtex-product-summary-2-x-brandName.t-body"
+      );
+
+      //Wait to get the elements title
+      const elementsName = await page.$$(
+        ".vtex-product-summary-2-x-productBrand.vtex-product-summary-2-x-brandName.t-body"
+      );
+
+      const elementsPrice = await page.$$(
+        ".false.olimpica-dinamic-flags-0-x-listPrices"
+      );
+
+      const elementsName_Link = await page.$$(
+        ".vtex-product-summary-2-x-clearLink.vtex-product-summary-2-x-clearLink--product-summary.h-100.flex.flex-column"
+      );
+
+      const elementsImg = await page.$$(
+        ".dib.relative.vtex-product-summary-2-x-imageContainer.vtex-product-summary-2-x-imageStackContainer.vtex-product-summary-2-x-hoverEffect"
+      );
+
+      //Get the title of the product
+      let title = await elementsName[i].evaluate((tit) =>
+        tit.textContent.trim()
+      );
+
+      //Check if the title of the element includes the product the user wants
+      if (verifyNameProduct(product, title)) {
+        productsName.push(title);
+
+        //Get the link
+        const link = await elementsName_Link[i].evaluate((link) => link.href);
+        productsLink.push(link);
+
+        // Get the price
+        let price = await elementsPrice[i].evaluate((price) =>
+          price.children[0].children[0].textContent.trim()
+        );
+        prices.push(price);
+
+        //Get the img src
+        const src = await elementsImg[i].evaluate((img) => img.children[0].src);
+        productsImg.push(src);
+
+        productsDescription.push(["Más información del producto en el enlace"]);
+      }
+
+      //Get only the first 5 products
+      if (productsName.length === 5) {
+        break;
+      }
+    }
+
+    // Take a screenshot of the page
+    //NOTE: This is just for testing purposes
+    await page.screenshot({ path: "ssOlimpica.png" });
+
+    await browser.close();
+    console.log("Fin Olimpica");
+
+    //Create the JSON object of the products
+    const productsOlimpica = createJSONObject(
+      "Olímpica",
+      productsName,
+      prices,
+      productsImg,
+      productsDescription,
+      productsLink,
+      productsName.length
+    );
+    products.push(...productsOlimpica);
+  } catch (error) {
+    console.error(
+      "Error occurred while searching for products on Olímpica:",
+      error
+    );
+    throw error; // Re-throw the error after logging it
+  }
 };
 
 const searchProductExito = async (product) => {
@@ -472,7 +553,7 @@ const searchProductExito = async (product) => {
 
     //Create the JSON object of the products
     const productsExito = createJSONObject(
-      "Exito",
+      "Éxito",
       productsName,
       prices,
       productsImg,
@@ -483,7 +564,7 @@ const searchProductExito = async (product) => {
     products.push(...productsExito);
   } catch (error) {
     console.error(
-      "Error occurred while searching for products on Alkosto:",
+      "Error occurred while searching for products on Éxito:",
       error
     );
     throw error; // Re-throw the error after logging it
@@ -609,7 +690,7 @@ const searchProductFalabella = async (product) => {
     products.push(...productsFalabella);
   } catch (error) {
     console.error(
-      "Error occurred while searching for products on Alkosto:",
+      "Error occurred while searching for products on Falabella:",
       error
     );
     throw error; // Re-throw the error after logging it

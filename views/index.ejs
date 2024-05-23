@@ -41,7 +41,7 @@
           <% products.forEach((prod) => { %>
           <div class="product">
             <img src="<%=prod.img%>" alt="img" class=<%= prod.shop === 'Mercado Libre'? 'img_mercadoLibre' : 'img_others' %> >
-            <h2><%= prod.name %> (<%= prod.shop %>)</h2>
+            <h2><%= prod.name %> <span class="<%= prod.shop.split(' ')[0].toLowerCase() %>"> (<%= prod.shop %>) </span></h2>
             <h3>Precio: <%= prod.price %></h3>
             <h4>Descripción %></h4>
             <ul>

@@ -67,6 +67,23 @@ input[type="submit"]:hover {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
+.mercado,
+.éxito {
+  color: rgb(163, 163, 7);
+}
+
+.falabella {
+  color: rgb(29, 149, 29);
+}
+
+.olímpica {
+  color: red;
+}
+
+.alkosto {
+  color: rgb(233, 151, 0);
+}
+
 .product .img_others {
   /* max-width: 100%; */
   width: 250px;
@@ -74,7 +91,7 @@ input[type="submit"]:hover {
 }
 
 .img_mercadoLibre {
-  width: 150px;
+  max-width: 250px;
 }
 
 .product h2 {
