@@ -326,7 +326,7 @@ const searchProductAlkosto = async (product) => {
 const searchProductOlimpica = async (product) => {
   console.log("inicio Olimpica");
   try {
-    const browser = await chromium.launch();
+    const browser = await chromium.launch({ headless: false });
     const page = await browser.newPage();
     await page.goto("https://www.olimpica.com.co/");
 
@@ -346,9 +346,9 @@ const searchProductOlimpica = async (product) => {
     const productsLink = [];
     const productsDescription = [];
 
-    await page.waitForLoadState("domcontentloaded");
+    await page.waitForLoadState("load");
+    await page.waitForTimeout(30000);
     await page.waitForSelector(".false.olimpica-dinamic-flags-0-x-listPrices");
-    await page.screenshot({ path: "ssOlimpica.png" });
 
     const numberOfElements = await page.$$(
       ".vtex-product-summary-2-x-productBrand.vtex-product-summary-2-x-brandName.t-body"
@@ -643,7 +643,7 @@ const searchProductFalabella = async (product) => {
         const src = await elementsImg[i].evaluate(
           (img) => img.children[0]?.children[0]?.children[1]?.src
         );
-        productsImg.push(src || "");
+        productsImg.push(src || "/images/no_img.png");
 
         let descriptions = [];
         if (elementsDescription.length > 0) {
